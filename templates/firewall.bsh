@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# created by ansible
+
+#interfaces
+
+case "$1" in
+ start)
+ modprobe ip_tables
+ modprobe ip_conntrack
+
+ echo 1 > /proc/sys/net/ipv4/ip_forward
+
+ iptables -F
+ iptables -t nat -F
+ iptables -t mangle -F
+ iptables -X
+ iptables -t nat -X
+ iptables -t mangle -X
+
+ iptables -P INPUT DROP
+ iptables -P OUTPUT {{ firewall.output_policy | default('DROP') }}
+ iptables -P FORWARD {{ firewall.forward_policy | default('DROP') }}
+
+ iptables -A INPUT -i lo -j ACCEPT
+ iptables -A OUTPUT -o lo -j ACCEPT
+
+ iptables -A INPUT -p icmp -m icmp --icmp-type 0 -j ACCEPT
+ iptables -A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
+
+ iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+# INPUT allow
+{% if firewall.allow.input is defined %}
+{% for port in firewall.allow.input.tcp | default([]) %}
+ iptables -A INPUT -p tcp --dport {{ port }} -j ACCEPT
+{% endfor %}
+
+{% for port in firewall.allow.input.udp | default([]) %}
+ iptables -A INPUT -p udp --dport {{ port }} -j ACCEPT
+{% endfor %}
+
+{% for ip in firewall.allow.input.ips | default([]) %}
+ iptables -A INPUT -p tcp -s {{ ip }} -j ACCEPT
+{% endfor %}
+
+{% for rule in firewall.raw | default([]) %}
+ iptables {{ rule }}
+{% endfor %}
+{% endif %}
+
+# FORWARD allow
+{% if firewall.allow.forward is defined %}
+{% for port in firewall.allow.forward.tcp | default([]) %}
+ iptables -A FORWARD -p tcp --dport {{ port }} -j ACCEPT
+{% endfor %}
+
+{% for port in firewall.allow.forward.udp | default([]) %}
+ iptables -A FORWARD -p udp --dport {{ port }} -j ACCEPT
+{% endfor %}
+
+{% for ip in firewall.allow.forward.ips | default([]) %}
+ iptables -A FORWARD -p tcp -s {{ ip }} -j ACCEPT
+{% endfor %}
+{% endif %}
+;;
+
+stop)
+ iptables -P INPUT ACCEPT
+ iptables -P OUTPUT ACCEPT
+ iptables -P FORWARD ACCEPT
+
+ iptables -F
+ iptables -t nat -F
+ iptables -t mangle -F
+ iptables -X
+ iptables -t nat -X
+ iptables -t mangle -X
+;;
+esac

@@ -1,0 +1,16 @@
+---
+- name: "firewall: creating config" 
+  file:
+    path: "/etc/firewall"
+    state: directory
+- template:
+    src: templates/firewall.bsh
+    dest: "/etc/firewall/firewall.bsh"
+    mode: 0700
+- copy:
+    src: files/firewall.service
+    dest: "/etc/systemd/system/firewall.service"
+- systemd:
+    name: "firewall"
+    enabled: true
+    state: restarted

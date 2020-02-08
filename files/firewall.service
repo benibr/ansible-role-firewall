@@ -1,0 +1,12 @@
+[Unit]
+Description=IPtables Firewall
+Requires=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash -c "/etc/firewall/firewall.bsh start"
+ExecStop=/bin/bash -c "/etc/firewall/firewall.bsh stop"
+
+[Install]
+WantedBy=multi-user.target

@@ -14,3 +14,14 @@
     name: "firewall"
     enabled: true
     state: restarted
+- template:
+    src: templates/firewall6.bsh
+    dest: "/etc/firewall/firewall6.bsh"
+    mode: 0700
+- copy:
+    src: files/firewall6.service
+    dest: "/etc/systemd/system/firewall6.service"
+- systemd:
+    name: "firewall"
+    enabled: true
+    state: restarted

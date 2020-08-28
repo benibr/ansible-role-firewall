@@ -1,0 +1,12 @@
+[Unit]
+Description=IP6tables Firewall
+Requires=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash -c "/etc/firewall/firewall6.bsh start"
+ExecStop=/bin/bash -c "/etc/firewall/firewall6.bsh stop"
+
+[Install]
+WantedBy=multi-user.target

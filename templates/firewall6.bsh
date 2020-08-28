@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# created by ansible
+
+case "$1" in
+ start)
+ modprobe ip_tables
+ modprobe ip_conntrack
+
+ echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+
+{% if firewall.purge is defined %}
+ ip6tables -F
+ ip6tables -t nat -F
+ ip6tables -t mangle -F
+ ip6tables -X
+ ip6tables -t nat -X
+ ip6tables -t mangle -X
+{% endif %}
+
+ ip6tables -P INPUT DROP
+ ip6tables -P OUTPUT {{ firewall.output_policy | default('DROP') }}
+ ip6tables -P FORWARD {{ firewall.forward_policy | default('DROP') }}
+
+ ip6tables -A INPUT -i lo -j ACCEPT
+ ip6tables -A OUTPUT -o lo -j ACCEPT
+
+ ip6tables -A INPUT -p icmpv6 --icmpv6-type echo-request -m limit --limit 900/min -j ACCEPT
+ ip6tables -A INPUT -p icmpv6 --icmpv6-type echo-reply -m limit --limit 900/min -j ACCEPT
+
+ ip6tables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+# INPUT allow
+{% if firewall.allow.input is defined %}
+{% for port in firewall.allow.input.tcp | default([]) %}
+ ip6tables -A INPUT -p tcp --dport {{ port }} -j ACCEPT
+{% endfor %}
+
+{% for port in firewall.allow.input.udp | default([]) %}
+ ip6tables -A INPUT -p udp --dport {{ port }} -j ACCEPT
+{% endfor %}
+
+{% for ip in firewall.allow.input.ips | default([]) %}
+ ip6tables -A INPUT -p tcp -s {{ ip }} -j ACCEPT
+{% endfor %}
+
+{% for rule in firewall.raw6 | default([]) %}
+ ip6tables {{ rule }}
+{% endfor %}
+{% endif %}
+
+# FORWARD allow
+{% if firewall.allow.forward is defined %}
+{% for port in firewall.allow.forward.tcp | default([]) %}
+ ip6tables -A FORWARD -p tcp --dport {{ port }} -j ACCEPT
+{% endfor %}
+
+{% for port in firewall.allow.forward.udp | default([]) %}
+ ip6tables -A FORWARD -p udp --dport {{ port }} -j ACCEPT
+{% endfor %}
+
+{% for ip in firewall.allow.forward.ips | default([]) %}
+ ip6tables -A FORWARD -p tcp -s {{ ip }} -j ACCEPT
+{% endfor %}
+{% endif %}
+;;
+
+stop)
+ ip6tables -P INPUT ACCEPT
+ ip6tables -P OUTPUT ACCEPT
+ ip6tables -P FORWARD ACCEPT
+
+{% if firewall.purge is defined %}
+ ip6tables -F
+ ip6tables -t nat -F
+ ip6tables -t mangle -F
+ ip6tables -X
+ ip6tables -t nat -X
+ ip6tables -t mangle -X
+{% endif %}
+;;
+esac

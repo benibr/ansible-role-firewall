@@ -11,14 +11,12 @@ case "$1" in
 
  echo 1 > /proc/sys/net/ipv4/ip_forward
 
-{% if firewall.purge is defined %}
  iptables -F
  iptables -t nat -F
  iptables -t mangle -F
  iptables -X
  iptables -t nat -X
  iptables -t mangle -X
-{% endif %}
 
  iptables -P INPUT DROP
  iptables -P OUTPUT {{ firewall.output_policy | default('DROP') }}
@@ -72,13 +70,11 @@ stop)
  iptables -P OUTPUT ACCEPT
  iptables -P FORWARD ACCEPT
 
-{% if firewall.purge is defined %}
  iptables -F
  iptables -t nat -F
  iptables -t mangle -F
  iptables -X
  iptables -t nat -X
  iptables -t mangle -X
-{% endif %}
 ;;
 esac

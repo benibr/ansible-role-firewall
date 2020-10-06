@@ -10,7 +10,7 @@
 - copy:
     src: files/firewall.service
     dest: "/etc/systemd/system/firewall.service"
-- systemd:
+- service:
     name: "firewall"
     enabled: true
     state: restarted
@@ -21,7 +21,7 @@
 - copy:
     src: files/firewall6.service
     dest: "/etc/systemd/system/firewall6.service"
-- systemd:
-    name: "firewall"
+- service:
+    name: "firewall6"
     enabled: true
     state: restarted

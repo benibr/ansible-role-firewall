@@ -24,7 +24,7 @@ case "$1" in
 
   # default policies
   iptables -P INPUT DROP
-  iptables -P ANSIBLE_OUTPUT {{ firewall.output_policy | default('DROP') }}
+  iptables -P OUTPUT {{ firewall.output_policy | default('DROP') }}
   iptables -P FORWARD {{ firewall.forward_policy | default('DROP') }}
 
   iptables -A ANSIBLE_INPUT -i lo -j ACCEPT
@@ -76,10 +76,15 @@ case "$1" in
   iptables -P FORWARD ACCEPT
 
   iptables -F ANSIBLE_INPUT
-  iptables -X ANSIBLE_INPUT
   iptables -F ANSIBLE_FORWARD
-  iptables -X ANSIBLE_FORWARD
   iptables -F ANSIBLE_OUTPUT
+
+  iptables -D INPUT -j ANSIBLE_INPUT
+  iptables -D FORWARD -j ANSIBLE_FORWARD
+  iptables -D OUTPUT -j ANSIBLE_OUTPUT
+
+  iptables -X ANSIBLE_INPUT
+  iptables -X ANSIBLE_FORWARD
   iptables -X ANSIBLE_OUTPUT
  ;;
  restart)

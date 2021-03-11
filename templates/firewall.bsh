@@ -2,79 +2,98 @@
 
 # created by ansible
 
-#interfaces
-
 case "$1" in
  start)
- modprobe ip_tables
- modprobe ip_conntrack
+  # preparations
+  modprobe ip_tables
+  modprobe ip_conntrack
+  echo 1 > /proc/sys/net/ipv4/ip_forward
 
- echo 1 > /proc/sys/net/ipv4/ip_forward
+  # adding managed chains
+  iptables -N ANSIBLE_INPUT
+  iptables -N ANSIBLE_FORWARD
+  iptables -N ANSIBLE_OUTPUT
+  iptables -I INPUT -j ANSIBLE_INPUT
+  iptables -I FORWARD -j ANSIBLE_FORWARD
+  iptables -I OUTPUT -j ANSIBLE_OUTPUT
 
- iptables -F
- iptables -t nat -F
- iptables -t mangle -F
- iptables -X
- iptables -t nat -X
- iptables -t mangle -X
+  # reset managed rules (during restart)
+  iptables -F ANSIBLE_INPUT
+  iptables -F ANSIBLE_FORWARD
+  iptables -F ANSIBLE_OUTPUT
 
- iptables -P INPUT DROP
- iptables -P OUTPUT {{ firewall.output_policy | default('DROP') }}
- iptables -P FORWARD {{ firewall.forward_policy | default('DROP') }}
+  # standards
+  iptables -A ANSIBLE_INPUT -i lo -j ACCEPT
+  iptables -A ANSIBLE_OUTPUT -o lo -j ACCEPT
 
- iptables -A INPUT -i lo -j ACCEPT
- iptables -A OUTPUT -o lo -j ACCEPT
+  iptables -A ANSIBLE_INPUT -p icmp -m icmp --icmp-type 0 -j ACCEPT
+  iptables -A ANSIBLE_INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
 
- iptables -A INPUT -p icmp -m icmp --icmp-type 0 -j ACCEPT
- iptables -A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
+  iptables -A ANSIBLE_INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
- iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-
-# INPUT allow
+  # ANSIBLE_INPUT allow
 {% if firewall.allow.input is defined %}
 {% for port in firewall.allow.input.tcp | default([]) %}
- iptables -A INPUT -p tcp --dport {{ port }} -j ACCEPT
+  iptables -A ANSIBLE_INPUT -p tcp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for port in firewall.allow.input.udp | default([]) %}
- iptables -A INPUT -p udp --dport {{ port }} -j ACCEPT
+  iptables -A ANSIBLE_INPUT -p udp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for ip in firewall.allow.input.ips | default([]) %}
- iptables -A INPUT -p tcp -s {{ ip }} -j ACCEPT
+  iptables -A ANSIBLE_INPUT -p tcp -s {{ ip }} -j ACCEPT
 {% endfor %}
 
 {% for rule in firewall.raw | default([]) %}
- iptables {{ rule }}
+  iptables {{ rule }}
 {% endfor %}
 {% endif %}
 
-# FORWARD allow
+  # ANSIBLE_FORWARD allow
 {% if firewall.allow.forward is defined %}
 {% for port in firewall.allow.forward.tcp | default([]) %}
- iptables -A FORWARD -p tcp --dport {{ port }} -j ACCEPT
+  iptables -A ANSIBLE_FORWARD -p tcp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for port in firewall.allow.forward.udp | default([]) %}
- iptables -A FORWARD -p udp --dport {{ port }} -j ACCEPT
+  iptables -A ANSIBLE_FORWARD -p udp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for ip in firewall.allow.forward.ips | default([]) %}
- iptables -A FORWARD -p tcp -s {{ ip }} -j ACCEPT
+  iptables -A ANSIBLE_FORWARD -p tcp -s {{ ip }} -j ACCEPT
 {% endfor %}
 {% endif %}
-;;
+ ;;
 
-stop)
- iptables -P INPUT ACCEPT
- iptables -P OUTPUT ACCEPT
- iptables -P FORWARD ACCEPT
+  # return jumps
+  iptables -A ANSIBLE_INPUT -j RETURN
+  iptables -A ANSIBLE_FORWARD -j RETURN
+  iptables -A ANSIBLE_OUTPUT -j RETURN
 
- iptables -F
- iptables -t nat -F
- iptables -t mangle -F
- iptables -X
- iptables -t nat -X
- iptables -t mangle -X
-;;
+  # default policies
+  iptables -P INPUT DROP
+  iptables -P OUTPUT {{ firewall.output_policy | default('DROP') }}
+  iptables -P FORWARD {{ firewall.forward_policy | default('DROP') }}
+
+ stop)
+  iptables -P INPUT ACCEPT
+  iptables -P OUTPUT ACCEPT
+  iptables -P FORWARD ACCEPT
+
+  iptables -F ANSIBLE_INPUT
+  iptables -F ANSIBLE_FORWARD
+  iptables -F ANSIBLE_OUTPUT
+
+  iptables -D INPUT -j ANSIBLE_INPUT
+  iptables -D FORWARD -j ANSIBLE_FORWARD
+  iptables -D OUTPUT -j ANSIBLE_OUTPUT
+
+  iptables -X ANSIBLE_INPUT
+  iptables -X ANSIBLE_FORWARD
+  iptables -X ANSIBLE_OUTPUT
+ ;;
+ restart)
+  start
+ ;;
 esac

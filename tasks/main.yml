@@ -25,20 +25,20 @@
         state: restarted
       tags:
         - ipv4
-    - name: deploy IPv4 firewall script
+    - name: deploy IPv6 firewall script
       template:
         src: templates/firewall6.bsh
         dest: "/etc/firewall/firewall6.bsh"
         mode: 0700
       tags:
         - ipv6
-    - name: deploy IPv4 firewall service
+    - name: deploy IPv6 firewall service
       copy:
         src: files/firewall6.service
         dest: "/etc/systemd/system/firewall6.service"
       tags:
         - ipv6
-    - name: enable IPv4 firewall service
+    - name: enable IPv6 firewall service
       service:
         name: "firewall6"
         enabled: true

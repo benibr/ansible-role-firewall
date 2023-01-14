@@ -1,33 +1,49 @@
 ---
-- name: creating directory 
-  file:
-    path: "/etc/firewall"
-    state: directory
-- name: deploy IPv4 firewall script
-  template:
-    src: templates/firewall.bsh
-    dest: "/etc/firewall/firewall.bsh"
-    mode: 0700
-- name: deploy IPv4 firewall service
-  copy:
-    src: files/firewall.service
-    dest: "/etc/systemd/system/firewall.service"
-- name: enable IPv4 firewall service
-  service:
-    name: "firewall"
-    enabled: true
-    state: restarted
-- name: deploy IPv4 firewall script
-  template:
-    src: templates/firewall6.bsh
-    dest: "/etc/firewall/firewall6.bsh"
-    mode: 0700
-- name: deploy IPv4 firewall service
-  copy:
-    src: files/firewall6.service
-    dest: "/etc/systemd/system/firewall6.service"
-- name: enable IPv4 firewall service
-  service:
-    name: "firewall6"
-    enabled: true
-    state: restarted
+- name: configuring firewall
+  block:
+    - name: creating directory 
+      file:
+        path: "/etc/firewall"
+        state: directory
+    - name: deploy IPv4 firewall script
+      template:
+        src: templates/firewall.bsh
+        dest: "/etc/firewall/firewall.bsh"
+        mode: 0700
+      tags:
+        - ipv4
+    - name: deploy IPv4 firewall service
+      copy:
+        src: files/firewall.service
+        dest: "/etc/systemd/system/firewall.service"
+      tags:
+        - ipv4
+    - name: enable IPv4 firewall service
+      service:
+        name: "firewall"
+        enabled: true
+        state: restarted
+      tags:
+        - ipv4
+    - name: deploy IPv4 firewall script
+      template:
+        src: templates/firewall6.bsh
+        dest: "/etc/firewall/firewall6.bsh"
+        mode: 0700
+      tags:
+        - ipv6
+    - name: deploy IPv4 firewall service
+      copy:
+        src: files/firewall6.service
+        dest: "/etc/systemd/system/firewall6.service"
+      tags:
+        - ipv6
+    - name: enable IPv4 firewall service
+      service:
+        name: "firewall6"
+        enabled: true
+        state: restarted
+      tags:
+        - ipv6
+  tags:
+    - firewall

@@ -3,7 +3,7 @@
 # created by ansible
 
 case "$1" in
- start)
+  start|restart)
   # preparations
   modprobe ip_tables
   modprobe ip_conntrack
@@ -64,7 +64,6 @@ case "$1" in
   iptables -A ANSIBLE_FORWARD -p tcp -s {{ ip }} -j ACCEPT
 {% endfor %}
 {% endif %}
- ;;
 
   # return jumps
   iptables -A ANSIBLE_INPUT -j RETURN
@@ -75,6 +74,7 @@ case "$1" in
   iptables -P INPUT DROP
   iptables -P OUTPUT {{ firewall.output_policy | default('DROP') }}
   iptables -P FORWARD {{ firewall.forward_policy | default('DROP') }}
+ ;;
 
  stop)
   iptables -P INPUT ACCEPT
@@ -92,8 +92,5 @@ case "$1" in
   iptables -X ANSIBLE_INPUT
   iptables -X ANSIBLE_FORWARD
   iptables -X ANSIBLE_OUTPUT
- ;;
- restart)
-  start
  ;;
 esac

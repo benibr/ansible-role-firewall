@@ -1,8 +1,0 @@
----
-- name: testing
-  hosts: localhost
-  become: false
-  tasks:
-    - template:
-        src: "../templates/firewall.bsh"
-        dest: "{{ ansible_env.HOME }}/test_firewall.sh"

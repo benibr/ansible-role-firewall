@@ -1,27 +1,33 @@
 ---
-- name: "firewall: creating config" 
+- name: creating directory 
   file:
     path: "/etc/firewall"
     state: directory
-- template:
+- name: deploy IPv4 firewall script
+  template:
     src: templates/firewall.bsh
     dest: "/etc/firewall/firewall.bsh"
     mode: 0700
-- copy:
+- name: deploy IPv4 firewall service
+  copy:
     src: files/firewall.service
     dest: "/etc/systemd/system/firewall.service"
-- service:
+- name: enable IPv4 firewall service
+  service:
     name: "firewall"
     enabled: true
     state: restarted
-- template:
+- name: deploy IPv4 firewall script
+  template:
     src: templates/firewall6.bsh
     dest: "/etc/firewall/firewall6.bsh"
     mode: 0700
-- copy:
+- name: deploy IPv4 firewall service
+  copy:
     src: files/firewall6.service
     dest: "/etc/systemd/system/firewall6.service"
-- service:
+- name: enable IPv4 firewall service
+  service:
     name: "firewall6"
     enabled: true
     state: restarted

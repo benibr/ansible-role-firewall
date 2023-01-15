@@ -10,87 +10,87 @@ case "$1" in
   echo 1 > /proc/sys/net/ipv4/ip_forward
 
   # adding managed chains
-  iptables -N ANSIBLE_INPUT
-  iptables -N ANSIBLE_FORWARD
-  iptables -N ANSIBLE_OUTPUT
-  iptables -I INPUT -j ANSIBLE_INPUT
-  iptables -I FORWARD -j ANSIBLE_FORWARD
-  iptables -I OUTPUT -j ANSIBLE_OUTPUT
+  iptables -w -N ANSIBLE_INPUT
+  iptables -w -N ANSIBLE_FORWARD
+  iptables -w -N ANSIBLE_OUTPUT
+  iptables -w -I INPUT -j ANSIBLE_INPUT
+  iptables -w -I FORWARD -j ANSIBLE_FORWARD
+  iptables -w -I OUTPUT -j ANSIBLE_OUTPUT
 
   # reset managed rules (during restart)
-  iptables -F ANSIBLE_INPUT
-  iptables -F ANSIBLE_FORWARD
-  iptables -F ANSIBLE_OUTPUT
+  iptables -w -F ANSIBLE_INPUT
+  iptables -w -F ANSIBLE_FORWARD
+  iptables -w -F ANSIBLE_OUTPUT
 
   # standards
-  iptables -A ANSIBLE_INPUT -i lo -j ACCEPT
-  iptables -A ANSIBLE_OUTPUT -o lo -j ACCEPT
+  iptables -w -A ANSIBLE_INPUT -i lo -j ACCEPT
+  iptables -w -A ANSIBLE_OUTPUT -o lo -j ACCEPT
 
-  iptables -A ANSIBLE_INPUT -p icmp -m icmp --icmp-type 0 -j ACCEPT
-  iptables -A ANSIBLE_INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
+  iptables -w -A ANSIBLE_INPUT -p icmp -m icmp --icmp-type 0 -j ACCEPT
+  iptables -w -A ANSIBLE_INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
 
-  iptables -A ANSIBLE_INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+  iptables -w -A ANSIBLE_INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
   # ANSIBLE_INPUT allow
 {% if firewall.allow.input is defined %}
 {% for port in firewall.allow.input.tcp | default([]) %}
-  iptables -A ANSIBLE_INPUT -p tcp --dport {{ port }} -j ACCEPT
+  iptables -w -A ANSIBLE_INPUT -p tcp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for port in firewall.allow.input.udp | default([]) %}
-  iptables -A ANSIBLE_INPUT -p udp --dport {{ port }} -j ACCEPT
+  iptables -w -A ANSIBLE_INPUT -p udp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for ip in firewall.allow.input.ips | default([]) %}
-  iptables -A ANSIBLE_INPUT -p tcp -s {{ ip }} -j ACCEPT
+  iptables -w -A ANSIBLE_INPUT -p tcp -s {{ ip }} -j ACCEPT
 {% endfor %}
 
 {% for rule in firewall.raw | default([]) %}
-  iptables {{ rule }}
+  iptables -w {{ rule }}
 {% endfor %}
 {% endif %}
 
   # ANSIBLE_FORWARD allow
 {% if firewall.allow.forward is defined %}
 {% for port in firewall.allow.forward.tcp | default([]) %}
-  iptables -A ANSIBLE_FORWARD -p tcp --dport {{ port }} -j ACCEPT
+  iptables -w -A ANSIBLE_FORWARD -p tcp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for port in firewall.allow.forward.udp | default([]) %}
-  iptables -A ANSIBLE_FORWARD -p udp --dport {{ port }} -j ACCEPT
+  iptables -w -A ANSIBLE_FORWARD -p udp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for ip in firewall.allow.forward.ips | default([]) %}
-  iptables -A ANSIBLE_FORWARD -p tcp -s {{ ip }} -j ACCEPT
+  iptables -w -A ANSIBLE_FORWARD -p tcp -s {{ ip }} -j ACCEPT
 {% endfor %}
 {% endif %}
 
   # return jumps
-  iptables -A ANSIBLE_INPUT -j RETURN
-  iptables -A ANSIBLE_FORWARD -j RETURN
-  iptables -A ANSIBLE_OUTPUT -j RETURN
+  iptables -w -A ANSIBLE_INPUT -j RETURN
+  iptables -w -A ANSIBLE_FORWARD -j RETURN
+  iptables -w -A ANSIBLE_OUTPUT -j RETURN
 
   # default policies
-  iptables -P INPUT DROP
-  iptables -P OUTPUT {{ firewall.output_policy | default('DROP') }}
-  iptables -P FORWARD {{ firewall.forward_policy | default('DROP') }}
+  iptables -w -P INPUT DROP
+  iptables -w -P OUTPUT {{ firewall.output_policy | default('DROP') }}
+  iptables -w -P FORWARD {{ firewall.forward_policy | default('DROP') }}
  ;;
 
  stop)
-  iptables -P INPUT ACCEPT
-  iptables -P OUTPUT ACCEPT
-  iptables -P FORWARD ACCEPT
+  iptables -w -P INPUT ACCEPT
+  iptables -w -P OUTPUT ACCEPT
+  iptables -w -P FORWARD ACCEPT
 
-  iptables -F ANSIBLE_INPUT
-  iptables -F ANSIBLE_FORWARD
-  iptables -F ANSIBLE_OUTPUT
+  iptables -w -F ANSIBLE_INPUT
+  iptables -w -F ANSIBLE_FORWARD
+  iptables -w -F ANSIBLE_OUTPUT
 
-  iptables -D INPUT -j ANSIBLE_INPUT
-  iptables -D FORWARD -j ANSIBLE_FORWARD
-  iptables -D OUTPUT -j ANSIBLE_OUTPUT
+  iptables -w -D INPUT -j ANSIBLE_INPUT
+  iptables -w -D FORWARD -j ANSIBLE_FORWARD
+  iptables -w -D OUTPUT -j ANSIBLE_OUTPUT
 
-  iptables -X ANSIBLE_INPUT
-  iptables -X ANSIBLE_FORWARD
-  iptables -X ANSIBLE_OUTPUT
+  iptables -w -X ANSIBLE_INPUT
+  iptables -w -X ANSIBLE_FORWARD
+  iptables -w -X ANSIBLE_OUTPUT
  ;;
 esac

@@ -1,7 +1,7 @@
 ---
 - name: configuring firewall
   block:
-    - name: remove ufw
+    - name: install iptables
       package:
         name: iptables
         state: present

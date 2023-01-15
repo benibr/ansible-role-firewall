@@ -1,1 +1,2 @@
 ---
+firewall_remove_ufw: true

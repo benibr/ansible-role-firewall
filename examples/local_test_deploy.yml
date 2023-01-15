@@ -1,0 +1,22 @@
+---
+- name: testing
+  hosts: localhost
+  become: false
+  vars:
+    firewall:
+      output_policy: ACCEPT
+      allow:
+        input:
+          tcp:
+            - 22222
+            - 64738
+          udp:
+            - 55555
+
+  tasks:
+    - template:
+        src: "../templates/firewall.bsh"
+        dest: "{{ ansible_env.HOME }}/test_firewall.sh"
+    - template:
+        src: "../templates/firewall6.bsh"
+        dest: "{{ ansible_env.HOME }}/test_firewall6.sh"

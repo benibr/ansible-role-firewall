@@ -3,80 +3,98 @@
 # created by ansible
 
 case "$1" in
- start)
- modprobe ip_tables
- modprobe ip_conntrack
+  start|restart)
+   # preparations
+  modprobe ip_tables
+  modprobe ip_conntrack
+  echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 
- echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+  # adding managed chains
+  ip6tables -w -N ANSIBLE_INPUT
+  ip6tables -w -N ANSIBLE_FORWARD
+  ip6tables -w -N ANSIBLE_OUTPUT
+  ip6tables -w -I INPUT -j ANSIBLE_INPUT
+  ip6tables -w -I FORWARD -j ANSIBLE_FORWARD
+  ip6tables -w -I OUTPUT -j ANSIBLE_OUTPUT
 
- ip6tables -F
- ip6tables -t nat -F
- ip6tables -t mangle -F
- ip6tables -X
- ip6tables -t nat -X
- ip6tables -t mangle -X
+  # reset managed rules (during restart)
+  ip6tables -w -F ANSIBLE_INPUT
+  ip6tables -w -F ANSIBLE_FORWARD
+  ip6tables -w -F ANSIBLE_OUTPUT
 
- ip6tables -P INPUT DROP
- ip6tables -P OUTPUT {{ firewall.output_policy | default('DROP') }}
- ip6tables -P FORWARD {{ firewall.forward_policy | default('DROP') }}
+  # standards
+  ip6tables -w -A ANSIBLE_INPUT -i lo -j ACCEPT
+  ip6tables -w -A ANSIBLE_OUTPUT -o lo -j ACCEPT
 
- ip6tables -A INPUT -i lo -j ACCEPT
- ip6tables -A OUTPUT -o lo -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -p icmpv6 --icmpv6-type echo-request -m limit --limit 900/min -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -p icmpv6 --icmpv6-type echo-reply -m limit --limit 900/min -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -p icmpv6 --icmpv6-type router-advertisement -m hl --hl-eq 255 -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -p icmpv6 --icmpv6-type neighbor-solicitation -m hl --hl-eq 255 -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -p icmpv6 --icmpv6-type neighbor-advertisement -m hl --hl-eq 255 -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -p icmpv6 --icmpv6-type redirect -m hl --hl-eq 255 -j ACCEPT
 
- ip6tables -A INPUT -p icmpv6 --icmpv6-type echo-request -m limit --limit 900/min -j ACCEPT
- ip6tables -A INPUT -p icmpv6 --icmpv6-type echo-reply -m limit --limit 900/min -j ACCEPT
- ip6tables -A INPUT -p icmpv6 --icmpv6-type router-advertisement -m hl --hl-eq 255 -j ACCEPT
- ip6tables -A INPUT -p icmpv6 --icmpv6-type neighbor-solicitation -m hl --hl-eq 255 -j ACCEPT
- ip6tables -A INPUT -p icmpv6 --icmpv6-type neighbor-advertisement -m hl --hl-eq 255 -j ACCEPT
- ip6tables -A INPUT -p icmpv6 --icmpv6-type redirect -m hl --hl-eq 255 -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
- ip6tables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-
-# INPUT allow
+  # ANSIBLE_INPUT allow
 {% if firewall.allow.input is defined %}
 {% for port in firewall.allow.input.tcp | default([]) %}
- ip6tables -A INPUT -p tcp --dport {{ port }} -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -p tcp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for port in firewall.allow.input.udp | default([]) %}
- ip6tables -A INPUT -p udp --dport {{ port }} -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -p udp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for ip in firewall.allow.input.ips | default([]) %}
- ip6tables -A INPUT -p tcp -s {{ ip }} -j ACCEPT
+  ip6tables -w -A ANSIBLE_INPUT -p tcp -s {{ ip }} -j ACCEPT
 {% endfor %}
 
 {% for rule in firewall.raw6 | default([]) %}
- ip6tables {{ rule }}
+  ip6tables -w {{ rule }}
 {% endfor %}
 {% endif %}
 
-# FORWARD allow
+  # ANSIBLE_FORWARD allow
 {% if firewall.allow.forward is defined %}
 {% for port in firewall.allow.forward.tcp | default([]) %}
- ip6tables -A FORWARD -p tcp --dport {{ port }} -j ACCEPT
+  ip6tables -w -A ANSIBLE_FORWARD -p tcp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for port in firewall.allow.forward.udp | default([]) %}
- ip6tables -A FORWARD -p udp --dport {{ port }} -j ACCEPT
+  ip6tables -w -A ANSIBLE_FORWARD -p udp --dport {{ port }} -j ACCEPT
 {% endfor %}
 
 {% for ip in firewall.allow.forward.ips | default([]) %}
- ip6tables -A FORWARD -p tcp -s {{ ip }} -j ACCEPT
+  ip6tables -w -A ANSIBLE_FORWARD -p tcp -s {{ ip }} -j ACCEPT
 {% endfor %}
 {% endif %}
+
+  # return jumps
+  ip6tables -w -A ANSIBLE_INPUT -j RETURN
+  ip6tables -w -A ANSIBLE_FORWARD -j RETURN
+  ip6tables -w -A ANSIBLE_OUTPUT -j RETURN
+
+  # default policies
+  ip6tables -w -P INPUT DROP
+  ip6tables -w -P OUTPUT {{ firewall.output_policy | default('DROP') }}
+  ip6tables -w -P FORWARD {{ firewall.forward_policy | default('DROP') }}
 ;;
 
-stop)
- ip6tables -P INPUT ACCEPT
- ip6tables -P OUTPUT ACCEPT
- ip6tables -P FORWARD ACCEPT
+ stop)
+  ip6tables -w -P INPUT ACCEPT
+  ip6tables -w -P OUTPUT ACCEPT
+  ip6tables -w -P FORWARD ACCEPT
 
- ip6tables -F
- ip6tables -t nat -F
- ip6tables -t mangle -F
- ip6tables -X
- ip6tables -t nat -X
- ip6tables -t mangle -X
+  ip6tables -w -F ANSIBLE_INPUT
+  ip6tables -w -F ANSIBLE_FORWARD
+  ip6tables -w -F ANSIBLE_OUTPUT
+
+  ip6tables -w -D INPUT -j ANSIBLE_INPUT
+  ip6tables -w -D FORWARD -j ANSIBLE_FORWARD
+  ip6tables -w -D OUTPUT -j ANSIBLE_OUTPUT
+
+  ip6tables -w -X ANSIBLE_INPUT
+  ip6tables -w -X ANSIBLE_FORWARD
+  ip6tables -w -X ANSIBLE_OUTPUT
 ;;
 esac

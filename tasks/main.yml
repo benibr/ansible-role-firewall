@@ -1,6 +1,11 @@
 ---
 - name: configuring firewall
   block:
+    - name: remove ufw
+      package:
+        name: ufw
+        state: absent
+      when: firewall_remove_ufw == true
     - name: creating directory 
       file:
         path: "/etc/firewall"

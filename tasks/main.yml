@@ -3,9 +3,17 @@
   block:
     - name: remove ufw
       package:
+        name: iptables
+        state: present
+      tags:
+        - iptables
+    - name: remove ufw
+      package:
         name: ufw
         state: absent
       when: firewall_remove_ufw == true
+      tags:
+        - ufw
     - name: creating directory 
       file:
         path: "/etc/firewall"

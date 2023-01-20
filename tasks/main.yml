@@ -3,7 +3,7 @@
   block:
     - name: install iptables
       package:
-        name: iptables
+        name: "{{ firewall_iptables_pkg }}"
         state: present
       tags:
         - iptables

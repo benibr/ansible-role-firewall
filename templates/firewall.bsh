@@ -71,7 +71,7 @@ case "$1" in
   iptables -w -A ANSIBLE_OUTPUT -j RETURN
 
   # default policies
-  iptables -w -P INPUT DROP
+  iptables -w -P INPUT {{ firewall.input_policy | default('DROP') }}
   iptables -w -P OUTPUT {{ firewall.output_policy | default('DROP') }}
   iptables -w -P FORWARD {{ firewall.forward_policy | default('DROP') }}
  ;;

@@ -75,7 +75,7 @@ case "$1" in
   ip6tables -w -A ANSIBLE_OUTPUT -j RETURN
 
   # default policies
-  ip6tables -w -P INPUT DROP
+  ip6tables -w -P INPUT {{ firewall.output_policy | default('DROP') }}
   ip6tables -w -P OUTPUT {{ firewall.output_policy | default('DROP') }}
   ip6tables -w -P FORWARD {{ firewall.forward_policy | default('DROP') }}
 ;;

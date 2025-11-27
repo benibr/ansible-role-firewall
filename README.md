@@ -20,5 +20,5 @@ Yes this is the 2000th implementation of such a firewall but I like to keep cont
           udp:
             - 69
       raw:
-        - "-A INPUT -i ve-+ -j ACCEPT"
+        - "-A INPUT -i eth+ -j ACCEPT"
 ```

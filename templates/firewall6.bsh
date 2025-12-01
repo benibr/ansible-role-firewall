@@ -2,9 +2,8 @@
 
 # created by ansible
 
-case "$1" in
-  start|restart)
-   # preparations
+_start() {
+  # preparations
   modprobe ip_tables
   modprobe ip_conntrack
   echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
@@ -78,9 +77,9 @@ case "$1" in
   ip6tables -w -P INPUT {{ firewall.input_policy | default('DROP') }}
   ip6tables -w -P OUTPUT {{ firewall.output_policy | default('DROP') }}
   ip6tables -w -P FORWARD {{ firewall.forward_policy | default('DROP') }}
-;;
+}
 
- stop)
+_stop() {
   ip6tables -w -P INPUT ACCEPT
   ip6tables -w -P OUTPUT ACCEPT
   ip6tables -w -P FORWARD ACCEPT
@@ -96,5 +95,19 @@ case "$1" in
   ip6tables -w -X ANSIBLE_INPUT
   ip6tables -w -X ANSIBLE_FORWARD
   ip6tables -w -X ANSIBLE_OUTPUT
-;;
+}
+
+case "$1" in
+  restart)
+  _stop
+  _start
+  ;;
+
+  start)
+  _start
+  ;;
+
+ stop)
+   _stop
+  ;;
 esac

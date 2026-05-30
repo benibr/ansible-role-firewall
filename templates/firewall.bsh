@@ -43,10 +43,6 @@ _start() {
 {% for ip in firewall.allow.input.ips | default([]) %}
   iptables -w -A ANSIBLE_INPUT -p tcp -s {{ ip }} -j ACCEPT
 {% endfor %}
-
-{% for rule in firewall.raw | default([]) %}
-  iptables -w {{ rule }}
-{% endfor %}
 {% endif %}
 
   # ANSIBLE_FORWARD allow
@@ -63,6 +59,11 @@ _start() {
   iptables -w -A ANSIBLE_FORWARD -p tcp -s {{ ip }} -j ACCEPT
 {% endfor %}
 {% endif %}
+
+  # raw rules
+{% for rule in firewall['raw'] | default([]) %}
+  iptables -w {{ rule }}
+{% endfor %}
 
   # return jumps
   iptables -w -A ANSIBLE_INPUT -j RETURN
